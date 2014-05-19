@@ -1,0 +1,3 @@
+[submodule "target-profiles"]
+	path = target-profiles
+	url = git@github.com:lillyoi/target-profiles.git
