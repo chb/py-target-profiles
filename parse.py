@@ -3,14 +3,14 @@
 
 import os
 import json
-from parser.parser import Parser
+from parser.parser_pyparsing import PyParser
 
 
 def parse(inpath, outpath):
 	""" Parses the target profile at the given inpath and writes JSON to the
 	given outpath.
 	"""
-	parser = Parser(inpath)
+	parser = PyParser(inpath)
 	
 	# parse profile
 	print('-->  Parsing {}'.format(inpath))
