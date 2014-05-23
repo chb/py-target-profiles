@@ -15,6 +15,7 @@ class PyParser(object):
 	
 	# snippets
 	snp_begin = CaselessKeyword("Patient") ^ CaselessKeyword("Patient's")
+	snp_must = Regex(r'must(\s+not)?\s+have').setParseAction(lambda s,l,t: ['not' not in t[0]])('include')
 	snp_main = Group(OneOrMore(Word(alphanums + "/'\"-_")))
 	
 	# numbers, units and ranges
@@ -35,16 +36,14 @@ class PyParser(object):
 	# common keywords
 	snp_of = CaselessKeyword('of')
 	snp_acthist = (CaselessKeyword('historical') | CaselessKeyword('active'))('qualifier')
-	snp_within = CaselessKeyword('within') + Group(snp_numeric + snp_units_time)('within')
+	snp_within = CaselessKeyword('within past') + Group(snp_numeric + snp_units_time)('within')
 	snp_end = SkipTo(snp_within | Literal('.') | StringEnd()).setParseAction(_str_strip)
 	
 	# gender + age
 	expr_gender = CaselessKeyword('gender must be') + (CaselessKeyword('female') | CaselessKeyword('male'))('gender')
-	expr_age = CaselessKeyword('age must be') + snp_value
+	expr_age = CaselessKeyword('age must be') + snp_value('age')
 	
-	# other
-	subj_main = Regex(r'must(\s+not)?\s+have').setParseAction(lambda s,l,t: ['not' not in t[0]])('include')
-	
+	# expressions
 	expr_allergy = CaselessKeyword('allergy to') + originalTextFor(snp_main)('allergy')
 	
 	tail_calc = snp_of + snp_value
@@ -63,7 +62,7 @@ class PyParser(object):
 	expr_drug = snp_acthist + CaselessKeyword('prescription with') + (tail_dc ^ tail_di ^ tail_dm)
 	
 	# one expression to rule them all
-	expr_main = subj_main + Or([expr_allergy, expr_calculated, expr_measured, expr_diag, expr_treat, expr_proc, expr_lab, expr_drug]) + Optional(snp_within)
+	expr_main = snp_must + Or([expr_allergy, expr_calculated, expr_measured, expr_diag, expr_treat, expr_proc, expr_lab, expr_drug]) + Optional(snp_within)
 	main_pattern = snp_begin + Group(Or([expr_gender, expr_age, expr_main]))('condition')
 	
 	
@@ -75,32 +74,68 @@ class PyParser(object):
 	def parseFile(self):
 		""" Parses the receiver's file.
 		
-		:returns: A JSON encodable structure
+		:returns: A JSON encodable target profile
 		"""
-		
-		print("Now parse: {}".format(self.inpath))
-		return {}
+		with open(self.inpath, 'r') as handle:
+			raw = handle.read()
+		return self.parseProfile(raw)
 	
 	def parseProfile(self, profile):
 		""" Parses a complete target profile.
 		
+		Still missing:
+		  - converting the "within" specification to ISO-8601
+		  - if-else support
+		
 		:returns: A list of statements
 		"""
 		stmts = []
-		sentences = re.split("\n+", profile)		# ok for now, should be built into parser
-		if sentences and len(sentences) > 0:
-			for sentence in sentences:
-				stmts.append(self.parseStatement(sentence.strip()))
+		for tok, start, end in self.parser.scanString(profile):
+			#print("{}\n\n".format(tok.dump()))		# DEBUG
+			res = self._propertiesFromToken(tok)
+			res['description'] = profile[start:end]
+			stmts.append(res)
+		
 		return stmts
 	
 	def parseStatement(self, stmt):
-		""" Parses a single target profile statement.
+		""" Parses a single target profile statement, raising an Exception if
+		it doesn't validate.
 		"""
 		
-		print(stmt)
 		tokens = self.parser.parseString(stmt)
 		print(tokens.dump())
 		print()
 		
-		return {}
+		return tokens
+		
+	def _propertiesFromToken(self, token):
+		""" Checks which subject key has been found in the token and returns an
+		appropriate dictionary.
+		"""
+		cond = token.condition
+		res = {
+			'include': cond.include,
+		}
+		
+		# extract type
+		if 'age' in cond:
+			res['type'] = 'age'
+		else:
+			for sub in ['gender', 'diagnosis', 'procedure', 'calculation', 'lab', 'allergy', 'prescription_drug_class', 'prescription_ingredient']:
+				if sub in cond:
+					res['type'] = sub
+					res[sub] = cond[sub]
+		
+		# extract ranges and quantities
+		if 'range' in cond:
+			res['range'] = 'TBD'
+		if 'quantity' in cond:
+			res['quantity'] = 'TBD'
+		
+		# qualifiers
+		if cond.qualifier:
+			res['qualifier'] = cond.qualifier
+		
+		return res
 

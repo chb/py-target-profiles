@@ -15,18 +15,22 @@ def parse(inpath, outpath):
 	# parse profile
 	print('-->  Parsing {}'.format(inpath))
 	try:
-		parsed = parser.parse()
+		parsed = parser.parseFile()
 	except Exception as e:
 		print('xx>  Failed to parse {}: {}'.format(inpath, e))
 		return
 	
 	# write JSON
 	with open(outpath, 'w') as h:
-		json.dump(parsed, h)
+		json.dump(parsed, h, indent=4)
 	print('-->  Written to {}'.format(outpath))
 
+def parseReference(outdir):
+	""" Parses the reference profile.
+	"""
+	parse('target-profiles/target-profiles/NCTsamples.md', os.path.join(outdir, 'NCTsamples.json'))
 
-def main(outdir):
+def parseAll(outdir):
 	""" Parses all target profiles found in the submodule and puts the JSON
 	representations into the directory specified by `outdir`.
 	"""
@@ -44,4 +48,4 @@ if '__main__' == __name__:
 	if not os.path.isdir(outdir):
 		os.mkdir(outdir)
 	
-	main(outdir)
+	parseReference(outdir)
