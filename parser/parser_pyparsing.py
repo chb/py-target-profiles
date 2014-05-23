@@ -6,7 +6,12 @@ from pyparsing import *
 
 
 def _str_strip(s, l, t):
+	""" Strip token whitespace. """
 	return t[0].strip() if t is not None and len(t) > 0 else ''
+
+def _within(s, l, t):
+	""" Return ISO-8601 representation for durations. """
+	return "P{}{}".format(round(t[0][0]), t[0][1][:1].upper())
 
 
 class PyParser(object):
@@ -36,7 +41,7 @@ class PyParser(object):
 	# common keywords
 	snp_of = CaselessKeyword('of')
 	snp_acthist = (CaselessKeyword('historical') | CaselessKeyword('active'))('qualifier')
-	snp_within = CaselessKeyword('within past') + Group(snp_numeric + snp_units_time)('within')
+	snp_within = CaselessKeyword('within past') + Group(snp_numeric + snp_units_time).setParseAction(_within)('within')
 	snp_end = SkipTo(snp_within | Literal('.') | StringEnd()).setParseAction(_str_strip)
 	
 	# gender + age
@@ -92,7 +97,7 @@ class PyParser(object):
 		stmts = []
 		for tok, start, end in self.parser.scanString(profile):
 			#print("{}\n\n".format(tok.dump()))		# DEBUG
-			res = self._propertiesFromToken(tok)
+			res = self._jsonPropertiesFromToken(tok)
 			res['description'] = profile[start:end]
 			stmts.append(res)
 		
@@ -109,7 +114,7 @@ class PyParser(object):
 		
 		return tokens
 		
-	def _propertiesFromToken(self, token):
+	def _jsonPropertiesFromToken(self, token):
 		""" Checks which subject key has been found in the token and returns an
 		appropriate dictionary.
 		"""
@@ -125,7 +130,7 @@ class PyParser(object):
 			for sub in ['gender', 'diagnosis', 'procedure', 'calculation', 'lab', 'allergy', 'prescription_drug_class', 'prescription_ingredient']:
 				if sub in cond:
 					res['type'] = sub
-					res[sub] = cond[sub]
+					res['value'] = cond[sub]
 		
 		# extract ranges and quantities
 		if 'range' in cond:
@@ -136,6 +141,8 @@ class PyParser(object):
 		# qualifiers
 		if cond.qualifier:
 			res['qualifier'] = cond.qualifier
+		if cond.within:
+			res['within'] = cond.within
 		
 		return res
 
