@@ -25,11 +25,11 @@ class PyParser(object):
 	
 	# numbers, units and ranges
 	snp_numeric = Combine(Word(nums) + Optional('.' + Word(nums))).setParseAction(lambda s,l,t: [ float(t[0]) ])
-	snp_lt = (CaselessKeyword('<') ^ CaselessKeyword('less than')).setParseAction(replaceWith('lt'))
-	snp_lte = (CaselessKeyword('<=') ^ CaselessKeyword('at most') ^ CaselessKeyword('no more than')).setParseAction(replaceWith('lte'))
+	snp_lt = (CaselessKeyword('<') ^ CaselessKeyword('less than')).setParseAction(replaceWith('<'))
+	snp_lte = (CaselessKeyword('<=') ^ CaselessKeyword('at most') ^ CaselessKeyword('no more than')).setParseAction(replaceWith('<='))
 	snp_gt = (CaselessKeyword('>') ^ CaselessKeyword('greater than')).setParseAction(replaceWith('gt'))
-	snp_gte = (CaselessKeyword('>=') ^ CaselessKeyword('at least') ^ CaselessKeyword('no less than')).setParseAction(replaceWith('gte'))
-	snp_eq = (CaselessKeyword('=') ^ CaselessKeyword('exactly')).setParseAction(replaceWith('eq'))
+	snp_gte = (CaselessKeyword('>=') ^ CaselessKeyword('at least') ^ CaselessKeyword('no less than')).setParseAction(replaceWith('>='))
+	snp_eq = (CaselessKeyword('=') ^ CaselessKeyword('exactly')).setParseAction(replaceWith('>'))
 	
 	snp_units = Word(alphas, alphanums + '%/^')
 	snp_units_time = Or([CaselessKeyword('years'), CaselessKeyword('months')])
@@ -132,10 +132,15 @@ class PyParser(object):
 			res['value'] = cond.gender
 			res['include'] = True
 		else:
-			for sub in ['diagnosis', 'procedure', 'calculation', 'lab', 'allergy', 'prescription:drug_class', 'prescription:ingredient', 'prescription:mechanism_of_action']:
-				if sub in cond:
-					res['type'] = sub
-					res['value'] = cond[sub]
+			for typ in ['diagnosis', 'procedure', 'calculation', 'lab', 'allergy', 'prescription:drug_class', 'prescription:ingredient', 'prescription:mechanism_of_action']:
+				if typ in cond:
+					res['value'] = cond[typ]
+					
+					if ':' in typ:
+						typ, sub = typ.split(':', 2)
+						if sub:
+							res['subtype'] = sub
+					res['type'] = typ
 		
 		# extract ranges and quantities
 		if 'range' in cond:
@@ -157,10 +162,7 @@ class PyParser(object):
 		if not token:
 			return None
 		
-		d = {
-			'number': token.value.number,
-			'unit': token.value.unit
-		}
+		d = {'number': token.value.number, 'unit': token.value.unit}
 		if token.comparator:
 			d['comparator'] = token.comparator
 		return d
