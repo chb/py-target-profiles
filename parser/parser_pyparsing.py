@@ -34,7 +34,7 @@ class PyParser(object):
 	snp_units = Word(alphas, alphanums + '%/^')
 	snp_units_time = Or([CaselessKeyword('years'), CaselessKeyword('months')])
 	snp_values = Group(snp_numeric('number') + Optional(snp_units)('unit'))
-	snp_quantity = Group((snp_lte | snp_lt | snp_gte | snp_gt | snp_eq)('delim') + snp_values('value'))
+	snp_quantity = Group((snp_lte | snp_lt | snp_gte | snp_gt | snp_eq)('comparator') + snp_values('value'))
 	snp_range = Group(snp_quantity('from') + CaselessKeyword('and') + snp_quantity('to'))
 	snp_value = snp_range('range') | snp_quantity('quantity')
 	
@@ -61,9 +61,9 @@ class PyParser(object):
 	expr_proc = snp_acthist + CaselessKeyword('treatment') + snp_of + snp_end('procedure')
 	expr_lab = CaselessKeyword('laboratory value') + snp_of + originalTextFor(snp_main)('lab') + snp_value		# no active|historical ?
 	
-	tail_dc = CaselessKeyword('drug class') + snp_end('prescription_drug_class')
-	tail_di = CaselessKeyword('ingredient') + snp_end('prescription_ingredient')
-	tail_dm = CaselessKeyword('mechanism of action') + snp_end('prescription_mechanism_of_action')
+	tail_dc = CaselessKeyword('drug class') + snp_end('prescription:drug_class')
+	tail_di = CaselessKeyword('ingredient') + snp_end('prescription:ingredient')
+	tail_dm = CaselessKeyword('mechanism of action') + snp_end('prescription:mechanism_of_action')
 	expr_drug = snp_acthist + CaselessKeyword('prescription with') + (tail_dc ^ tail_di ^ tail_dm)
 	
 	# one expression to rule them all
@@ -123,20 +123,25 @@ class PyParser(object):
 			'include': cond.include,
 		}
 		
-		# extract type
+		# extract type, special handling for "age" (will get range or quantity later) and "gender"
 		if 'age' in cond:
 			res['type'] = 'age'
+			res['include'] = True
+		elif 'gender' in cond:
+			res['type'] = 'gender'
+			res['value'] = cond.gender
+			res['include'] = True
 		else:
-			for sub in ['gender', 'diagnosis', 'procedure', 'calculation', 'lab', 'allergy', 'prescription_drug_class', 'prescription_ingredient']:
+			for sub in ['diagnosis', 'procedure', 'calculation', 'lab', 'allergy', 'prescription:drug_class', 'prescription:ingredient', 'prescription:mechanism_of_action']:
 				if sub in cond:
 					res['type'] = sub
 					res['value'] = cond[sub]
 		
 		# extract ranges and quantities
 		if 'range' in cond:
-			res['range'] = 'TBD'
+			res['range'] = self._jsonForRange(cond.range)
 		if 'quantity' in cond:
-			res['quantity'] = 'TBD'
+			res['quantity'] = self._jsonForQuantity(cond.quantity)
 		
 		# qualifiers
 		if cond.qualifier:
@@ -145,4 +150,29 @@ class PyParser(object):
 			res['within'] = cond.within
 		
 		return res
+	
+	def _jsonForQuantity(self, token):
+		""" Returns JSON for a token that must represent a quantity.
+		"""
+		if not token:
+			return None
+		
+		d = {
+			'number': token.value.number,
+			'unit': token.value.unit
+		}
+		if token.comparator:
+			d['comparator'] = token.comparator
+		return d
+	
+	def _jsonForRange(self, token):
+		""" Returns JSON for a token that must represent a range.
+		"""
+		if not token:
+			return None
+		
+		return {
+			'from': self._jsonForQuantity(token['from']),
+			'to': self._jsonForQuantity(token.to)
+		}
 
