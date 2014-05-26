@@ -1,3 +1,6 @@
 [submodule "target-profiles"]
 	path = target-profiles
 	url = git@github.com:lillyoi/target-profiles.git
+[submodule "codifier/UMLS"]
+	path = codifier/UMLS
+	url = https://github.com/chb/py-umls.git
