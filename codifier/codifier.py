@@ -58,8 +58,8 @@ class RxNormCodifier(Codifier):
 		
 		# get the best concept
 		is_ingredient = 'ingredient' == kwargs.get('subtype')
-		lim_tty = 'IN' if is_ingredient else None
-		best = self.lookup.rxcui_for_name(concept, [lim_tty])
+		lim_tty = ['IN'] if is_ingredient else None
+		best = self.lookup.rxcui_for_name(concept, lim_tty)
 		if not best:
 			return None
 		
