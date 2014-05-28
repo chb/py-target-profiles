@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 from .UMLS.rxnorm import RxNormLookup
+from .UMLS.umls import UMLSLookup
 
 
 class Codifier(object):
@@ -73,3 +74,15 @@ class RxNormCodifier(Codifier):
 			codes = {best: self.lookup.lookup_rxcui_name(best)}
 		
 		return codes
+
+
+class UMLSCodifier(Codifier):
+	""" Codify to UMLS concepts.
+	"""
+	
+	def __init__(self):
+		self.lookup = UMLSLookup()
+	
+	def codifyConcept(self, concept, leaves=True, **kwargs):
+		raise Exception('Implement UMLSLookup.lookup_code_for_name')
+
