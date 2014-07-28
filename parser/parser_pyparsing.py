@@ -77,7 +77,7 @@ class PyParser(object):
 	
 	
 	def parseFile(self):
-		""" Parses the receiver's file.
+		""" Reads and parses a complete target profile file.
 		
 		:returns: A JSON encodable target profile
 		"""
@@ -85,8 +85,32 @@ class PyParser(object):
 			raw = handle.read()
 		return self.parseProfile(raw)
 	
+	def findProfileContent(self, profile):
+		""" Receives a complete profile and returns only the relevant parts, as
+		defined by Markdown code fences (```).
+		"""
+		found = ''
+		inside = False
+		idx = 0
+		start = -1
+		while True:
+			idx = profile.find('```', idx)
+			if idx < 0:
+				break
+			
+			inside = not inside
+			if inside:
+				start = idx + 3
+			elif start >= 0:
+				found += profile[start:idx]
+				start = -1
+			idx += 3
+		
+		return found
+	
 	def parseProfile(self, profile):
-		""" Parses a complete target profile.
+		""" Parses a complete target profile, only regarding sentences between
+		Markdown code fences (```) as profile material.
 		
 		Still missing:
 		  - converting the "within" specification to ISO-8601
@@ -95,10 +119,11 @@ class PyParser(object):
 		:returns: A list of statements
 		"""
 		stmts = []
-		for tok, start, end in self.parser.scanString(profile):
+		content = self.findProfileContent(profile)
+		for tok, start, end in self.parser.scanString(content):
 			#print("{}\n\n".format(tok.dump()))		# DEBUG
 			res = self._jsonPropertiesFromToken(tok)
-			res['description'] = profile[start:end]
+			res['description'] = content[start:end]
 			stmts.append(res)
 		
 		return stmts
