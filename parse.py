@@ -10,12 +10,12 @@ def parse(inpath, outpath):
 	""" Parses the target profile at the given inpath and writes JSON to the
 	given outpath.
 	"""
-	parser = PyParser(inpath)
+	parser = PyParser()
 	
 	# parse profile
 	print('-->  Parsing {}'.format(inpath))
 	try:
-		parsed = parser.parseFile()
+		parsed = parser.parseFile(inpath)
 	except Exception as e:
 		print('xx>  Failed to parse {}: {}'.format(inpath, e))
 		return

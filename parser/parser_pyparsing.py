@@ -71,17 +71,17 @@ class PyParser(object):
 	main_pattern = snp_begin + Group(Or([expr_gender, expr_age, expr_main]))('condition')
 	
 	
-	def __init__(self, inpath=None):
-		self.inpath = inpath
+	def __init__(self):
 		self.parser = PyParser.main_pattern
 	
 	
-	def parseFile(self):
+	def parseFile(self, inpath):
 		""" Reads and parses a complete target profile file.
 		
+		:param str inpath: The path to the target profile file
 		:returns: A JSON encodable target profile
 		"""
-		with open(self.inpath, 'r') as handle:
+		with open(inpath, 'r') as handle:
 			raw = handle.read()
 		return self.parseProfile(raw)
 	
