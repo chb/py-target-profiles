@@ -28,7 +28,7 @@ class PyParser(object):
 	snp_lt = (CaselessKeyword('<') ^ CaselessKeyword('less than')).setParseAction(replaceWith('<'))
 	snp_lte = (CaselessKeyword('<=') ^ CaselessKeyword('at most') ^ CaselessKeyword('no more than')).setParseAction(replaceWith('<='))
 	snp_gt = (CaselessKeyword('>') ^ CaselessKeyword('greater than')).setParseAction(replaceWith('gt'))
-	snp_gte = (CaselessKeyword('>=') ^ CaselessKeyword('at least') ^ CaselessKeyword('no less than')).setParseAction(replaceWith('>='))
+	snp_gte = (CaselessKeyword('>=') ^ CaselessKeyword('greater than or equal to') ^ CaselessKeyword('at least') ^ CaselessKeyword('no less than')).setParseAction(replaceWith('>='))
 	snp_eq = (CaselessKeyword('=') ^ CaselessKeyword('exactly')).setParseAction(replaceWith('>'))
 	
 	snp_units = Word(alphas, alphanums + '%/^')
@@ -199,7 +199,7 @@ class PyParser(object):
 			return None
 		
 		return {
-			'from': self._jsonForQuantity(token['from']),
+			'from': self._jsonForQuantity(token['from']),		# cannot use `token.from`
 			'to': self._jsonForQuantity(token.to)
 		}
 
