@@ -10,7 +10,7 @@ class TargetProfile(object):
 	rule_classes = {}
 	
 	@classmethod
-	def register(cls, klass):
+	def register_rule(cls, klass):
 		""" Register a TargetProfileRule to handle rules of a given type.
 		"""
 		if klass is None:
@@ -29,7 +29,10 @@ class TargetProfile(object):
 			if not isinstance(json_arr, list):
 				raise Exception("Only supporting JSON formats whose root is a list, is {}".format(type(json_arr)))
 			for js in json_arr:
-				klass = self.__class__.rule_classes.get(js.get('type')) or TargetProfileRule
+				klass = self.rule_classes.get(js.get('type'))
+				if klass is None:
+					logging.info('No target profile rule class to represent "{}", using base class'.format(js.get('type')))
+					klass = TargetProfileRule
 				self.rules.append(klass(js))
 	
 	
@@ -68,6 +71,12 @@ class TargetProfilePatientState(TargetProfileRule):
 	""" Describe a patient's state.
 	"""
 	for_type = 'state'
+
+
+class TargetProfileGender(TargetProfileRule):
+	""" Limit a patient's gender.
+	"""
+	for_type = 'gender'
 
 
 class TargetProfileAge(TargetProfileRule):
@@ -109,12 +118,69 @@ class TargetProfileMedicalScore(TargetProfileRule):
 	for_type = 'score'
 
 
-TargetProfile.register(TargetProfilePatientState)
-TargetProfile.register(TargetProfileAge)
-TargetProfile.register(TargetProfileDiagnosis)
-TargetProfile.register(TargetProfileMeasurement)
-TargetProfile.register(TargetProfileAllergy)
-TargetProfile.register(TargetProfileMedicalScore)
+class TargetProfileMedication(TargetProfileRule):
+	""" Handle medications.
+	"""
+	for_type = 'medication'
+
+
+class TargetProfileProcedure(TargetProfileRule):
+	""" Handle procedures.
+	"""
+	for_type = 'procedure'
+
+
+class TargetProfileAgreement(TargetProfileRule):
+	""" Handle agreements.
+	"""
+	for_type = 'agreement'
+
+
+class TargetProfileAdverseEvent(TargetProfileRule):
+	""" Handle adverse events.
+	"""
+	for_type = 'adverse-event'
+
+
+class TargetProfileLabValue(TargetProfileRule):
+	""" Handle lab values.
+	"""
+	for_type = 'labValue'
+
+
+class TargetProfileMutation(TargetProfileRule):
+	""" Handle mutation information.
+	"""
+	for_type = 'mutation'
+
+
+class TargetProfileCancerStage(TargetProfileRule):
+	""" Handle cancer stage description.
+	"""
+	for_type = 'cancer_stage'
+
+
+class TargetProfileDevice(TargetProfileRule):
+	""" Handle devices.
+	"""
+	for_type = 'device'
+
+
+TargetProfile.register_rule(TargetProfilePatientState)
+TargetProfile.register_rule(TargetProfileGender)
+TargetProfile.register_rule(TargetProfileAge)
+TargetProfile.register_rule(TargetProfileDiagnosis)
+TargetProfile.register_rule(TargetProfileMeasurement)
+TargetProfile.register_rule(TargetProfileAllergy)
+TargetProfile.register_rule(TargetProfileMedicalScore)
+TargetProfile.register_rule(TargetProfileMedication)
+TargetProfile.register_rule(TargetProfileProcedure)
+TargetProfile.register_rule(TargetProfileAgreement)
+TargetProfile.register_rule(TargetProfileAdverseEvent)
+TargetProfile.register_rule(TargetProfileLabValue)
+TargetProfile.register_rule(TargetProfileMutation)
+TargetProfile.register_rule(TargetProfileCancerStage)
+TargetProfile.register_rule(TargetProfileDevice)
 
 
 class TargetProfileInput(object):
