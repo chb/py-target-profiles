@@ -2,10 +2,11 @@
 # -*- coding: UTF-8 -*-
 
 import json
+import logging
 
 
 class TargetProfile(object):
-	""" Class representing one target profile.
+	""" Class representing one target profile in JSON format.
 	"""
 	rule_classes = {}
 	
